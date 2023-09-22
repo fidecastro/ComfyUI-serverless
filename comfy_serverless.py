@@ -10,9 +10,7 @@ import requests
 import time
 import os
 import subprocess
-import tempfile
 from typing import List
-from distillery_aws import AWSConnector
 import sys
 
 APP_NAME = os.getenv('APP_NAME') # Name of the application
@@ -21,7 +19,7 @@ API_URL = os.getenv('API_URL')  # URL of the API server (warning: do not add the
 INITIAL_PORT = int(os.getenv('INITIAL_PORT')) # Initial port to use when starting the API server; may be changed if the port is already in use
 INSTANCE_IDENTIFIER = APP_NAME+'-'+str(uuid.uuid4()) # Unique identifier for this instance of the worker
 TEST_PAYLOAD = json.load(open(os.getenv('TEST_PAYLOAD'))) # The TEST_PAYLOAD is a JSON object that contains a prompt that will be used to test if the API server is running
-MAX_COMFY_START_ATTEMPTS = 10  # Set this to the maximum number of attempts you want
+MAX_COMFY_START_ATTEMPTS = 10  # Set this to the maximum number of connection attempts to ComfyUI you want
 
 class ComfyConnector:
     _instance = None
@@ -56,20 +54,16 @@ class ComfyConnector:
     
     def start_api(self): # This method is used to start the API server
         if not self.is_api_running(): # Block execution until the API server is running
-            aws_connector = AWSConnector()
             api_command_line = API_COMMAND_LINE + f" --port {self.urlport}" # Add the port to the command line
             if self._process is None or self._process.poll() is not None: # Check if the process is not running or has terminated for some reason
                 self._process = subprocess.Popen(api_command_line.split())
                 print("API process started with PID:", self._process.pid)
-                aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, f"API startup procedure began with PID: {self._process.pid} in port {self.urlport}", level='INFO')
                 attempts = 0
                 while not self.is_api_running(): # Block execution until the API server is running
                     if attempts >= MAX_COMFY_START_ATTEMPTS:
-                        aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, f"API startup procedure failed after {attempts} attempts.", level='ERROR')
                         raise RuntimeError("API startup procedure failed after {attempts} attempts.")
                     time.sleep(1)  # Wait for 1 second before checking again
                     attempts += 1 # Increment the number of attempts
-                aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, f"API startup procedure finalized after {attempts} attempts with PID: {self._process.pid} in port {self.urlport}", level='INFO')
                 print(f"API startup procedure finalized after {attempts} attempts with PID {self._process.pid} in port {self.urlport}")
                 time.sleep(0.5)  # Wait for 0.5 seconds before returning
 
@@ -93,10 +87,8 @@ class ComfyConnector:
 
     def kill_api(self): # This method is used to kill the API server
         if self._process is not None and self._process.poll() is None:
-            aws_connector = AWSConnector()
             self._process.kill()
             self._process = None
-            aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, f"API process killed.", level='INFO')
             print("API process killed")
 
     def get_history(self, prompt_id): # This method is used to retrieve the history of a prompt from the API server
@@ -144,12 +136,10 @@ class ComfyConnector:
                 images.append(image)
             return images
         except Exception as e:
-            aws_connector = AWSConnector()
             exc_type, exc_value, exc_traceback = sys.exc_info()
             line_no = exc_traceback.tb_lineno
             error_message = f'Unhandled error at line {line_no}: {str(e)}'
             print("generate_images - ", error_message)
-            aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, error_message, level='ERROR')
 
 
     def upload_image(self, filepath, subfolder=None, folder_type=None, overwrite=False): # This method is used to upload an image to the API server for use in img2img or controlnet
@@ -166,11 +156,9 @@ class ComfyConnector:
             response = requests.post(url, files=files, data=data)
             return response.json()
         except Exception as e:
-            aws_connector = AWSConnector()
             exc_type, exc_value, exc_traceback = sys.exc_info()
             line_no = exc_traceback.tb_lineno
-            error_message = f'Unhandled error at line {line_no}: {str(e)}'
-            aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, error_message, level='ERROR')
+            error_message = f'upload_image - Unhandled error at line {line_no}: {str(e)}'
 
     @staticmethod
     def find_output_node(json_object): # This method is used to find the node containing the SaveImage class in a prompt
@@ -188,20 +176,24 @@ class ComfyConnector:
         with open(path, 'r') as file:
             return json.load(file)
 
-    def upload_from_s3_to_input(self, aws_connector, s3_keys: List[str]):
-        try:
-            file_objs = aws_connector.download_fileobj(s3_keys) # Download file objects from AWS S3
-            for s3_key, file_obj in zip(s3_keys, file_objs): # Iterate through the downloaded file objects and corresponding S3 keys
-                temp_file_path = os.path.join(tempfile.gettempdir(), os.path.basename(s3_key)) # Create a temporary file with the same name as the S3 key
-                with open(temp_file_path, 'wb') as temp_file:
-                    temp_file.write(file_obj.read())
-                response = self.upload_image(filepath=temp_file_path, folder_type='input') # Upload the temporary file to the Comfy API in the 'input' folder
-                os.unlink(temp_file_path) # Delete the temporary file
-        except Exception as e:
-            aws_connector = AWSConnector()
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            line_no = exc_traceback.tb_lineno
-            error_message = f'Unhandled error at line {line_no}: {str(e)}'
-            aws_connector.print_log('N/A', INSTANCE_IDENTIFIER, error_message, level='ERROR')
-            raise RuntimeError(f"An error occurred while uploading from S3 to input: {str(e)}")
-
+    @staticmethod
+    def replace_key_value(json_object, target_key, new_value, class_type_list=None, exclude=True): # This method is used to edit the payload of a prompt
+        for key, value in json_object.items():
+            # Check if the current value is a dictionary and apply the logic recursively
+            if isinstance(value, dict):
+                class_type = value.get('class_type')                
+                # Determine whether to apply the logic based on exclude and class_type_list
+                should_apply_logic = (
+                    (exclude and (class_type_list is None or class_type not in class_type_list)) or
+                    (not exclude and (class_type_list is not None and class_type in class_type_list))
+                )
+                # Apply the logic to replace the target key with the new value if conditions are met
+                if should_apply_logic and target_key in value:
+                    value[target_key] = new_value
+                # Recurse vertically (into nested dictionaries)
+                ComfyConnector.replace_key_value(value, target_key, new_value, class_type_list, exclude)
+            # Recurse sideways (into lists)
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        ComfyConnector.replace_key_value(item, target_key, new_value, class_type_list, exclude)

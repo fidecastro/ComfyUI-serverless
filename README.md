@@ -6,7 +6,7 @@ ComfyUI is incredibly flexible and fast; it is the perfect tool launch new workf
 Using the websocket endpoint that Comfy offers, I created a very simple way to generate images from Comfy via code. With the ComfyConnector class, you may:
 
 1. Automatically start Comfy webserver (no need to python3 main.py)
-2. Easily edit the API json file using the replace_key_value method,regardless of how complex/spaghettized your workflow may be (no need to hardcode your inputs based on each workflow; just tell the function what parameter to look for and it will change it for you)
+2. Easily edit the API json file using the replace_key_value method, regardless of how complex/spaghettized your workflow may be (no need to hardcode your inputs based on each workflow; just tell the function what parameter to look for and it will change it for you)
 3. Send to Comfy the API json file containing the workflow topology and editable parameters, and receive back the generated images as an image list object
 4. Send to Comfy images and receive back an image list object for use in img2img/controlnet workflows
 5. Automatic discovery of the outputs in a JSON file via the find_output_node method
