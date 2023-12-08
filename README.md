@@ -1,7 +1,7 @@
 # ComfyUI-serverless
 _**A connector to use ComfyUI in serverless deployments**_
 
-ComfyUI is incredibly flexible and fast; it is the perfect tool launch new workflows in serverless deployments. Unfortunately, there isn't a lot on API documentation and the examples that have been offered so far don't deal with some important issues (for example: good ways to pass images to Comfy, generalized handling of API json files, 
+ComfyUI is incredibly flexible and fast; it is the perfect tool launch new workflows in serverless deployments. Unfortunately, there isn't a lot on API documentation and the examples that have been offered so far don't deal with some important issues (for example: good ways to pass images to Comfy, generalized handling of API json files, etc).
 
 Using the websocket endpoint that Comfy offers, I created a very simple way to generate images from Comfy via code. With the ComfyConnector class, you may:
 
