@@ -19,7 +19,8 @@ API_URL = os.getenv('API_URL')  # URL of the API server (warning: do not add the
 INITIAL_PORT = int(os.getenv('INITIAL_PORT')) # Initial port to use when starting the API server; may be changed if the port is already in use
 INSTANCE_IDENTIFIER = APP_NAME+'-'+str(uuid.uuid4()) # Unique identifier for this instance of the worker
 TEST_PAYLOAD = json.load(open(os.getenv('TEST_PAYLOAD'))) # The TEST_PAYLOAD is a JSON object that contains a prompt that will be used to test if the API server is running
-MAX_COMFY_START_ATTEMPTS = 10  # Set this to the maximum number of connection attempts to ComfyUI you want
+MAX_COMFY_START_ATTEMPTS = int(os.getenv('MAX_COMFY_START_ATTEMPTS') if os.getenv('MAX_COMFY_START_ATTEMPTS') is not None else 10)  # Set this to the maximum number of connection attempts to ComfyUI you want
+COMFY_START_ATTEMPTS_SLEEP = int(os.getenv('COMFY_START_ATTEMPTS_SLEEP') if os.getenv('COMFY_START_ATTEMPTS_SLEEP') is not None else 1) # The waiting time for each reattempt to connect to ComfyUI.
 
 class ComfyConnector:
     _instance = None
@@ -62,7 +63,7 @@ class ComfyConnector:
                 while not self.is_api_running(): # Block execution until the API server is running
                     if attempts >= MAX_COMFY_START_ATTEMPTS:
                         raise RuntimeError(f"API startup procedure failed after {attempts} attempts.")
-                    time.sleep(1)  # Wait for 1 second before checking again
+                    time.sleep(COMFY_START_ATTEMPTS_SLEEP)  # Wait before checking again, for 1 second by default
                     attempts += 1 # Increment the number of attempts
                 print(f"API startup procedure finalized after {attempts} attempts with PID {self._process.pid} in port {self.urlport}")
                 time.sleep(0.5)  # Wait for 0.5 seconds before returning
