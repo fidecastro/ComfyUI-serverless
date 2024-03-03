@@ -61,7 +61,7 @@ class ComfyConnector:
                 attempts = 0
                 while not self.is_api_running(): # Block execution until the API server is running
                     if attempts >= MAX_COMFY_START_ATTEMPTS:
-                        raise RuntimeError("API startup procedure failed after {attempts} attempts.")
+                        raise RuntimeError(f"API startup procedure failed after {attempts} attempts.")
                     time.sleep(1)  # Wait for 1 second before checking again
                     attempts += 1 # Increment the number of attempts
                 print(f"API startup procedure finalized after {attempts} attempts with PID {self._process.pid} in port {self.urlport}")
