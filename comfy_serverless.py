@@ -86,27 +86,6 @@ class ComfyConnector:
             print("API not running:", e)
             return False
 
-    def kill_api(self): # This method is used to kill the API server
-        if self._process is not None and self._process.poll() is None:
-            # Kill the process and reset the instance-specific attributes
-            self._process.kill()
-            self._process = None
-            if self.ws: # Close WebSocket connection with a try/except/finally block to ensure the connection is closed
-                try:
-                    if self.ws.connected:
-                        self.ws.close()
-                except Exception as e:
-                    print(f"Error closing WebSocket connection.")
-                finally:
-                    self.ws = None
-            # Reset other instance-specific attributes
-            self.urlport = None
-            self.server_address = None
-            self.client_id = None
-            # Reset the singleton instance
-            ComfyConnector._instance = None
-            print("API process killed")
-
     def kill_api(self):
         # This method kills the API server process, closes the WebSocket connection, and resets instance-specific attributes.
         try:
