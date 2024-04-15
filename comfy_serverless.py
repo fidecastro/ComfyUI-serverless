@@ -88,9 +88,44 @@ class ComfyConnector:
 
     def kill_api(self): # This method is used to kill the API server
         if self._process is not None and self._process.poll() is None:
+            # Kill the process and reset the instance-specific attributes
             self._process.kill()
             self._process = None
+            if self.ws: # Close WebSocket connection with a try/except/finally block to ensure the connection is closed
+                try:
+                    if self.ws.connected:
+                        self.ws.close()
+                except Exception as e:
+                    print(f"Error closing WebSocket connection.")
+                finally:
+                    self.ws = None
+            # Reset other instance-specific attributes
+            self.urlport = None
+            self.server_address = None
+            self.client_id = None
+            # Reset the singleton instance
+            ComfyConnector._instance = None
             print("API process killed")
+
+    def kill_api(self):
+        # This method kills the API server process, closes the WebSocket connection, and resets instance-specific attributes.
+        try:
+            if self._process is not None and self._process.poll() is None:
+                self._process.kill()
+                print("kill_api: API process killed.")
+            if self.ws and self.ws.connected:
+                self.ws.close()
+                print("kill_api: WebSocket connection closed.")
+        except Exception as e:
+            print(f"kill_api: Warning: The following issues occurred: {e}")
+        finally:
+            self._process = None
+            self.ws = None            
+            self.urlport = None
+            self.server_address = None
+            self.client_id = None
+            ComfyConnector._instance = None
+            print("kill_api: Cleanup complete.")
 
     def get_history(self, prompt_id): # This method is used to retrieve the history of a prompt from the API server
         with urllib.request.urlopen(f"{self.server_address}/history/{prompt_id}") as response:
@@ -142,24 +177,20 @@ class ComfyConnector:
             error_message = f'Unhandled error at line {line_no}: {str(e)}'
             print("generate_images - ", error_message)
 
-
-    def upload_image(self, filepath, subfolder=None, folder_type=None, overwrite=False): # This method is used to upload an image to the API server for use in img2img or controlnet
+    def upload_image(self, filepath, subfolder=None, folder_type=None, overwrite=False):  # This method is used to upload an image to the API server for use in img2img or controlnet
         try: 
             url = f"{self.server_address}/upload/image"
-            files = {'image': open(filepath, 'rb')}
-            data = {
-                'overwrite': str(overwrite).lower()
-            }
-            if subfolder:
-                data['subfolder'] = subfolder
-            if folder_type:
-                data['type'] = folder_type
-            response = requests.post(url, files=files, data=data)
+            with open(filepath, 'rb') as file:
+                files = {'image': file}
+                data = {'overwrite': str(overwrite).lower()}
+                if subfolder:
+                    data['subfolder'] = subfolder
+                if folder_type:
+                    data['type'] = folder_type
+                response = requests.post(url, files=files, data=data)
             return response.json()
         except Exception as e:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            line_no = exc_traceback.tb_lineno
-            error_message = f'upload_image - Unhandled error at line {line_no}: {str(e)}'
+            raise
 
     @staticmethod
     def find_output_node(json_object): # This method is used to find the node containing the SaveImage class in a prompt
