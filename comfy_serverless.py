@@ -19,7 +19,7 @@ API_URL = os.getenv('API_URL') if os.getenv('API_URL') is not None else '127.0.0
 INITIAL_PORT = int(os.getenv('INITIAL_PORT')) if os.getenv('INITIAL_PORT') is not None else 8188 # Initial port to use when starting the API server; may be changed if the port is already in use
 TEST_PAYLOAD = json.load(open(os.getenv('TEST_PAYLOAD'))) if os.getenv('TEST_PAYLOAD') is not None else json.load(open('test_payload.json')) # The TEST_PAYLOAD is a JSON object that contains a prompt that will be used to test if the API server is running
 MAX_COMFY_START_ATTEMPTS = int(os.getenv('MAX_COMFY_START_ATTEMPTS')) if os.getenv('MAX_COMFY_START_ATTEMPTS') is not None else 10  # Set this to the maximum number of connection attempts to ComfyUI you want
-COMFY_START_ATTEMPTS_SLEEP = int(os.getenv('COMFY_START_ATTEMPTS_SLEEP')) if os.getenv('COMFY_START_ATTEMPTS_SLEEP') is not None else 1 # The waiting time for each reattempt to connect to ComfyUI
+COMFY_START_ATTEMPTS_SLEEP = float(os.getenv('COMFY_START_ATTEMPTS_SLEEP')) if os.getenv('COMFY_START_ATTEMPTS_SLEEP') is not None else 1 # The waiting time for each reattempt to connect to ComfyUI
 
 INSTANCE_IDENTIFIER = APP_NAME+'-'+str(uuid.uuid4()) # Unique identifier for this instance of the worker; used in the WebSocket connection
 
