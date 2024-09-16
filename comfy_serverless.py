@@ -1,4 +1,3 @@
-
 import uuid
 import json
 import urllib.request
@@ -136,20 +135,23 @@ class ComfyConnector:
                     message = json.loads(out) # Parse the message as JSON
                     if message['type'] == 'executing': # Check if the message is an 'executing' message
                         data = message['data'] # Extract the data from the message
-                        if data['node'] is None and data['prompt_id'] == prompt_id:
+                        if data['node'] is None and data['prompt_id'] == prompt_id: 
                             break
-            address = self.find_output_node(payload) # Find the SaveImage node; workflow MUST contain only one SaveImage node
+                else:
+                    continue  # Previews are binary data
             history = self.get_history(prompt_id)[prompt_id]
-            filenames = eval(f"history['outputs']{address}")['images']  # Extract all images
             images = []
-            for img_info in filenames:
-                filename = img_info['filename']
-                subfolder = img_info['subfolder']
-                folder_type = img_info['type']
-                image_data = self.get_image(filename, subfolder, folder_type)
-                image_file = io.BytesIO(image_data)
-                image = Image.open(image_file)
-                images.append(image)
+            for node_id in history['outputs']:
+                node_output = history['outputs'][node_id]
+                if 'images' in node_output:
+                    for img_info in node_output['images']:
+                        filename = img_info['filename']
+                        subfolder = img_info['subfolder']
+                        folder_type = img_info['type']
+                        image_data = self.get_image(filename, subfolder, folder_type)
+                        image_file = io.BytesIO(image_data)
+                        image = Image.open(image_file)
+                        images.append(image)
             return images
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
