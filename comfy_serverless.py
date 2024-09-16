@@ -108,7 +108,8 @@ class ComfyConnector:
 
     def get_history(self, prompt_id): # This method is used to retrieve the history of a prompt from the API server
         with urllib.request.urlopen(f"{self.server_address}/history/{prompt_id}") as response:
-            return json.loads(response.read())
+            history = json.loads(response.read())
+            return history
 
     def get_image(self, filename, subfolder, folder_type): # This method is used to retrieve an image from the API server
         data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
@@ -123,7 +124,7 @@ class ComfyConnector:
         req = urllib.request.Request(f"{self.server_address}/prompt", data=data, headers=headers)
         return json.loads(urllib.request.urlopen(req).read())
 
-    def generate_images(self, payload): # This method is used to generate images from a prompt and is the main method of this class
+    def generate_images(self, payload): # This method is used to generate images from a prompt; it is necessary to have a SaveImage node in the workflow
         try:
             if not self.ws.connected: # Check if the WebSocket is connected to the API server and reconnect if necessary
                 print("WebSocket is not connected. Reconnecting...")
