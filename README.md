@@ -19,10 +19,6 @@ _**Discomfort's mission is to 10x the development and deployment speeds of any c
 
 *FULL DOCUMENTATION CAN BE FOUND [**HERE**](https://www.discomfort.ai)*
 
-## ✅ Current Status: Alpha
-
-Discomfort is currently in the **alpha** stage but is fully operational on Linux machines. The core functionality is complete and has been tested in a variety of scenarios. However, as an alpha release, there may still be bugs and opportunities for improvement.
-
 -----
 
 ## 🚀 Quick Start
@@ -144,9 +140,6 @@ The vision for Discomfort is to enable things like:
 
 ## 🚨 Known Issues
 
-  - **Logging**: Discomfort's log messages are currently mixed with ComfyUI's output, which can make debugging difficult.
-  - **Error Handling**: Error handling is still being improved. In some cases, an error may require a full restart.
-  - **Memory Management**: The `WorkflowContext` is still in the alpha stage and may have memory leaks in some edge cases.
   - **Testing on Windows TBD**: If running on Windows, prefer a WSL2 Linux build -- or help us by testing it on Windows!
 
 -----
